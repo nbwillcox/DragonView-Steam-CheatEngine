@@ -33,12 +33,15 @@ FRUIT = 0x2111  # 8-bit; spent on upgrades
 LEVEL = 0x7094
 EXP = 0x7095  # 32-bit progress toward the next level; a level-up subtracts that level's threshold
 EXP_GAINED = 0xE7B3  # set to $FF when EXP is granted, so the HUD runs the level-up check
+DEMON_TASK = 0x6F5B  # nonzero once the Sektra marsh wizard has set his task (which zeroes the tally)
+DEMON_KILLS = 0x6F5C  # his demon tally; the game only counts while the task is set, and stops at 100
 SAVE_TAG = 0x2138  # copy of the save block's signature; present once a game is loaded
 SAVE_TAG_VALUE = b"S-DRAKKHEN"
 
 JADE_MAX = 9999  # the game's own cap
 FRUIT_FILL = 250  # pickups INC fruit with no cap check, so 255 would wrap to 0 on the next one
 LEVEL_NO_EXP = 0x2E  # the game stops granting EXP from this level on
+DEMON_KILLS_GOAL = 100
 EXP_DIGITS = 7
 ROM_TITLE = b"DRAGON VIEW"
 
@@ -287,6 +290,8 @@ class App:
             self.vars.append(var)
 
         tk.Button(frame, text=f"Fill fruit to {FRUIT_FILL}", command=self.fill_fruit).pack(anchor="w", pady=(8, 0))
+        tk.Button(frame, text=f"Set demon kills to {DEMON_KILLS_GOAL}",
+                  command=self.max_demon_kills).pack(anchor="w", pady=(8, 0))
 
         exp_row = tk.Frame(frame)
         exp_row.pack(anchor="w", pady=(8, 0))
@@ -345,7 +350,8 @@ class App:
             if var.get() and cheat.hold and in_game:
                 cheat.hold(game)
         if in_game:
-            self.stats.config(text=f"Lv {game.r8(LEVEL)}   EXP {game.r32(EXP):,}\n"
+            demons = f"   Demons {game.r8(DEMON_KILLS)}/{DEMON_KILLS_GOAL}" if game.r8(DEMON_TASK) else ""
+            self.stats.config(text=f"Lv {game.r8(LEVEL)}   EXP {game.r32(EXP):,}{demons}\n"
                                    f"HP {game.r8(HP)}/{game.r8(HP_MAX)}   MP {game.r8(MP)}/{game.r8(MP_MAX)}   "
                                    f"Jade {game.r16(JADE)}\nBombs {game.r8(BOMBS)}   Potions {game.r8(POTIONS)}   "
                                    f"Fruit {game.r8(FRUIT)}")
@@ -362,6 +368,18 @@ class App:
         try:
             if game := self.in_save("fill fruit"):
                 game.w8(FRUIT, FRUIT_FILL)
+        except OSError as e:
+            self.detach()
+            self.status.config(text=f"Not attached: {e}")
+
+    def max_demon_kills(self) -> None:
+        try:
+            if game := self.in_save("set demon kills"):
+                if not game.r8(DEMON_TASK):
+                    self.status.config(text="Talk to the wizard in the Sektra marsh first")
+                    return
+                game.w8(DEMON_KILLS, DEMON_KILLS_GOAL)
+                self.status.config(text=f"Demon kills set to {DEMON_KILLS_GOAL}; go see the wizard")
         except OSError as e:
             self.detach()
             self.status.config(text=f"Not attached: {e}")

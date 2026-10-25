@@ -15,6 +15,7 @@ A free, open-source trainer for the Steam release of **Dragon View**, the 1994 S
 | Unlimited fruit | Upgrades, selling and eating don't use up fruit |
 | Fill fruit | Sets fruit to 250 |
 | Add EXP | Adds any amount of EXP; the game then levels you up the normal way |
+| Set demon kills | Fills the Sektra marsh wizard's demon tally to 100, so he hands over his armor-upgrade chest |
 
 There's also a live readout of your level, EXP, HP, MP, jade, bombs, potions and fruit.
 
@@ -50,6 +51,8 @@ The Steam release runs the original SNES ROM inside a bundled [Mednafen](https:/
 | `$7E7094` | 8-bit | Level |
 | `$7E7095` | 32-bit | EXP toward the next level |
 | `$7EE7B3` | 8-bit | "EXP gained" flag (`$FF` triggers the level-up check) |
+| `$7E6F5B` | 8-bit | Sektra marsh wizard's task is active (nonzero) |
+| `$7E6F5C` | 8-bit | His demon tally; only counts while the task is active, and stops at 100 |
 
 The ROM patch sites are listed in `CHEATS` in [`dv_trainer.py`](dv_trainer.py). Most come from the known Game Genie codes. The fruit sites were found by tracing every write to `$7E2111`.
 
@@ -58,6 +61,7 @@ The ROM patch sites are listed in `CHEATS` in [`dv_trainer.py`](dv_trainer.py). 
 - **Fruit is one byte, so 255 is the hard maximum.** Fruit pickups add 1 with no cap check, so 255 would wrap to 0 on the next pickup. That's why the fill button stops at 250.
 - **Unlimited bombs, potions and fruit** stop the count from going down. You still need at least one bomb or potion, or enough fruit to afford the upgrade.
 - **Max level.** The game stops granting EXP at level 46, so Add EXP does nothing there.
+- **Demon kills.** The tally holds at most 100, which is what the wizard asks for. Talk to him first: setting his task resets the tally to 0, so the button only works once the task is active.
 - **Version.** Tested on the current Steam build. If a different build's ROM doesn't match, the trainer shows "unexpected ROM byte" and patches nothing.
 - **Antivirus.** Like any trainer, it reads and writes another process's memory, so some antivirus tools may flag it. Being plain readable source makes it easy to verify.
 
